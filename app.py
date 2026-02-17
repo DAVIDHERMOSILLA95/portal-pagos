@@ -7,54 +7,78 @@ url_sb = st.secrets["SUPABASE_URL"]
 key_sb = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url_sb, key_sb)
 
-st.set_page_config(page_title="Portal AP", layout="wide")
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Gestión Financiera | AP Portal", layout="wide", page_icon="💰")
 
-st.title("📑 Panel de Cuentas por Pagar")
-st.markdown("---")
+# --- ESTILOS CSS PERSONALIZADOS ---
+st.markdown("""
+    <style>
+    .main { background-color: #f8f9fa; }
+    .stMetric { background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .stDataFrame { border: none; border-radius: 10px; overflow: hidden; }
+    h1 { color: #1e293b; font-weight: 700; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #2563eb; color: white; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- CARGA DE DATOS ---
+# --- LÓGICA DE DATOS ---
 try:
     response = supabase.table("facturas_pagar").select("*").execute()
     df = pd.DataFrame(response.data)
 
     if not df.empty:
-        # Métricas
-        col1, col2 = st.columns(2)
-        pendientes = df[df['estado'] == 'Pendiente']
-        col1.metric("Facturas Pendientes", len(pendientes))
-        col2.metric("Total por Pagar", f"${pendientes['monto'].sum():,.0f}")
+        # TÍTULO Y MÉTRICAS
+        st.title("🚀 Panel de Control Administrativo")
+        st.caption("Gestión centralizada de cuentas por pagar y flujo de caja")
+        st.markdown("---")
 
-        st.subheader("Listado de Documentos")
+        # FILA DE MÉTRICAS (KPIs)
+        pendientes = df[df['estado'] == 'Pendiente']
+        total_deuda = pendientes['monto'].sum()
         
-        # DEFINICIÓN DE COLUMNAS
-        columnas_visibles = ['folio', 'proveedor', 'rut_proveedor', 'monto', 'fecha_emision', 'estado']
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Pendientes", len(pendientes), delta_color="inverse")
+        m2.metric("Total por Pagar", f"${total_deuda:,.0f} CLP")
+        m3.metric("Pagadas (Mes)", len(df[df['estado'] == 'Pagada']))
+        m4.metric("Proveedores", df['proveedor'].nunique())
+
+        st.markdown("### 📋 Listado Maestro de Documentos")
         
-        # Mostramos la tabla (quitamos el 'id' de la vista para no confundir)
-        st.dataframe(df[columnas_visibles].sort_values(by='fecha_emision', ascending=False), use_container_width=True)
-        
-        # Panel lateral de acciones mejorado
+        # TABLA CON FORMATO
+        columnas = ['folio', 'proveedor', 'rut_proveedor', 'monto', 'fecha_emision', 'estado']
+        # Aplicamos un estilo visual a la tabla
+        st.dataframe(
+            df[columnas].sort_values(by='fecha_emision', ascending=False),
+            use_container_width=True,
+            column_config={
+                "monto": st.column_config.NumberColumn("Monto", format="$ %d"),
+                "estado": st.column_config.SelectboxColumn("Estado", options=["Pendiente", "Pagada"]),
+                "folio": "N° Folio"
+            }
+        )
+
+        # PANEL LATERAL DE GESTIÓN
         with st.sidebar:
-            st.header("Gestión de Pagos")
+            st.image("https://cdn-icons-png.flaticon.com/512/3135/3135706.png", width=80)
+            st.header("Acciones Rápidas")
+            st.write("Selecciona un documento para actualizar su estado de pago.")
             
-            # Filtramos solo los folios que están pendientes para que sea más fácil elegir
-            lista_folios_pendientes = pendientes['folio'].unique().tolist()
-            
-            if lista_folios_pendientes:
-                folio_seleccionado = st.selectbox("Selecciona Folio para pagar", lista_folios_pendientes)
-                
-                if st.button("Marcar como Pagada"):
-                    # Actualizamos en la base de datos buscando por la columna 'folio'
-                    supabase.table("facturas_pagar").update({"estado": "Pagada"}).eq("folio", folio_seleccionado).execute()
-                    st.success(f"Factura Folio {folio_seleccionado} marcada como pagada.")
+            lista_folios = pendientes['folio'].unique().tolist()
+            if lista_folios:
+                sel_folio = st.selectbox("Documento a gestionar:", lista_folios)
+                if st.button("Confirmar Pago ✅"):
+                    supabase.table("facturas_pagar").update({"estado": "Pagada"}).eq("folio", sel_folio).execute()
+                    st.toast(f"Factura {sel_folio} pagada con éxito")
                     st.rerun()
             else:
-                st.write("No hay folios pendientes de pago.")
-                
+                st.success("¡Al día! No hay facturas pendientes.")
+
     else:
-        st.info("No hay facturas en la base de datos.")
+        st.info("Esperando recepción de nuevos documentos...")
 
 except Exception as e:
-    st.error(f"Error crítico: {e}")
+    st.error(f"Error de conexión: {e}")
+
 
 
 
