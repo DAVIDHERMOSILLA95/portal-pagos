@@ -30,9 +30,9 @@ try:
 
         st.subheader("Listado de Documentos")
         
-        # Ordenar y mostrar la tabla
-        columnas_visibles = ['id', 'proveedor', 'rut_proveedor', 'monto', 'fecha_emision', 'estado']
-        st.dataframe(df[columnas_visibles].sort_values(by='id', ascending=False), use_container_width=True)
+# Busca esta línea en tu archivo app.py y agrega 'folio'
+columnas_visibles = ['id', 'folio', 'proveedor', 'rut_proveedor', 'monto', 'fecha_emision', 'estado']
+st.dataframe(df[columnas_visibles].sort_values(by='id', ascending=False), use_container_width=True)
         
         # Panel lateral para acciones
         with st.sidebar:
@@ -56,5 +56,6 @@ except Exception as e:
     st.info("Asegúrate de haber configurado correctamente los 'Secrets' en Streamlit Cloud.")
 
   
+
 
 
