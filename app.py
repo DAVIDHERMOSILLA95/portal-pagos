@@ -26,21 +26,30 @@ try:
 
         st.subheader("Listado de Documentos")
         
-        # DEFINICIÓN DE COLUMNAS (Aquí incluimos el folio real)
-        # Asegúrate de que esta lista coincida exactamente con los nombres en Supabase
-        columnas_visibles = ['id', 'folio', 'proveedor', 'rut_proveedor', 'monto', 'fecha_emision', 'estado']
+        # DEFINICIÓN DE COLUMNAS
+        columnas_visibles = ['folio', 'proveedor', 'rut_proveedor', 'monto', 'fecha_emision', 'estado']
         
-        # Mostramos la tabla filtrando solo las columnas que queremos
-        st.dataframe(df[columnas_visibles].sort_values(by='id', ascending=False), use_container_width=True)
+        # Mostramos la tabla (quitamos el 'id' de la vista para no confundir)
+        st.dataframe(df[columnas_visibles].sort_values(by='fecha_emision', ascending=False), use_container_width=True)
         
-        # Panel lateral de acciones
+        # Panel lateral de acciones mejorado
         with st.sidebar:
-            st.header("Acciones")
-            id_pago = st.number_input("ID de registro para pagar", min_value=int(df['id'].min()), step=1)
-            if st.button("Marcar como Pagada"):
-                supabase.table("facturas_pagar").update({"estado": "Pagada"}).eq("id", id_pago).execute()
-                st.success(f"Registro {id_pago} actualizado.")
-                st.rerun()
+            st.header("Gestión de Pagos")
+            
+            # Filtramos solo los folios que están pendientes para que sea más fácil elegir
+            lista_folios_pendientes = pendientes['folio'].unique().tolist()
+            
+            if lista_folios_pendientes:
+                folio_seleccionado = st.selectbox("Selecciona Folio para pagar", lista_folios_pendientes)
+                
+                if st.button("Marcar como Pagada"):
+                    # Actualizamos en la base de datos buscando por la columna 'folio'
+                    supabase.table("facturas_pagar").update({"estado": "Pagada"}).eq("folio", folio_seleccionado).execute()
+                    st.success(f"Factura Folio {folio_seleccionado} marcada como pagada.")
+                    st.rerun()
+            else:
+                st.write("No hay folios pendientes de pago.")
+                
     else:
         st.info("No hay facturas en la base de datos.")
 
