@@ -2,10 +2,13 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 
-# --- CONFIGURACIÓN ---
-url_sb = "https://fwcrsgkxeydzppwfciuw.supabase.co"
-key_sb = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3Y3JzZ2t4ZXlkenBwd2ZjaXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyODAwOTYsImV4cCI6MjA4Njg1NjA5Nn0.QPnbL5Ps-ZplcBMNG6-_PwQgJZiqwM55SWUw55Ivc9M" 
+# --- CONFIGURACIÓN SEGURA ---
+# Ahora leemos desde st.secrets en lugar de tener las llaves expuestas
+url_sb = st.secrets["SUPABASE_URL"]
+key_sb = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url_sb, key_sb)
+
+# El resto del código de la app se mantiene igual...
 
 st.set_page_config(page_title="Portal AP", layout="wide")
 
@@ -39,3 +42,4 @@ else:
     st.info("No hay datos registrados aún.")
 
   
+
