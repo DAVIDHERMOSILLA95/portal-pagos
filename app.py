@@ -1,4 +1,3 @@
-%%writefile app.py
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
@@ -38,4 +37,5 @@ if not df.empty:
             st.rerun()
 else:
     st.info("No hay datos registrados aún.")
+
   
